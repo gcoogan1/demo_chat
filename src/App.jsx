@@ -1,98 +1,26 @@
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "../supbaseClient";
+import { useAuth } from "./auth/useAuthHook";
+import { useChatRoom } from "./chats/useChatHook";
 
 function App() {
-  const [session, setSession] = useState([]);
-  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [usersOnline, setUsersOnline] = useState([]);
 
   const chatContainerRef = useRef(null);
   const scroll = useRef();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+  // AUTH HANDLERS
+  const { session, signIn, signOut } = useAuth();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+  // 👉 All chat logic now here
+  const { messages, usersOnline, sendMessage } = useChatRoom(1, session);
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  console.log(session);
-
-  // sign in
-  const signIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-    });
-  };
-
-  // sign out
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-  };
-
-  useEffect(() => {
-    if (!session?.user) {
-      setUsersOnline([]);
-      return;
-    }
-    const roomOne = supabase.channel("room_one", {
-      config: {
-        presence: {
-          key: session?.user?.id,
-        },
-      },
-    });
-
-    roomOne.on("broadcast", { event: "message" }, (payload) => {
-      setMessages((prevMessages) => [...prevMessages, payload.payload]);
-      // console.log(messages);
-    });
-
-    // track user presence subscribe!
-    roomOne.subscribe(async (status) => {
-      if (status === "SUBSCRIBED") {
-        await roomOne.track({
-          id: session?.user?.id,
-        });
-      }
-    });
-
-    // handle user presence
-    roomOne.on("presence", { event: "sync" }, () => {
-      const state = roomOne.presenceState();
-      setUsersOnline(Object.keys(state));
-    });
-
-    return () => {
-      roomOne.unsubscribe();
-    };
-  }, [session]);
-
-  // send message
-  const sendMessage = async (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-
-    supabase.channel("room_one").send({
-      type: "broadcast",
-      event: "message",
-      payload: {
-        message: newMessage,
-        user_name: session?.user?.user_metadata?.email,
-        avatar: session?.user?.user_metadata?.avatar_url,
-        timestamp: new Date().toISOString(),
-      },
-    });
+    await sendMessage(newMessage);
     setNewMessage("");
-  };
+};
 
+  // Format timestamp
   const formatTime = (isoString) => {
     return new Date(isoString).toLocaleTimeString("en-us", {
       hour: "numeric",
@@ -101,6 +29,9 @@ function App() {
     });
   };
 
+  console.log("Messages:", messages);
+
+  // Auto scroll to bottom on new message
   useEffect(() => {
     setTimeout(() => {
       if (chatContainerRef.current) {
@@ -110,6 +41,7 @@ function App() {
     }, [100]);
   }, [messages]);
 
+  
   if (!session) {
     return (
       <div className="w-full flex h-screen justify-center items-center">
@@ -139,7 +71,7 @@ function App() {
             ref={chatContainerRef}
             className="p-4 flex flex-col overflow-y-auto h-[500px]"
           >
-            {messages.map((msg, idx) => (
+            {messages.length > 0 && messages.map((msg, idx) => (
               <div
                 key={idx}
                 className={`my-2 flex w-full items-start ${
@@ -149,13 +81,7 @@ function App() {
                 }`}
               >
                 {/* received message - avatar on left */}
-                {msg?.user_name !== session?.user?.email && (
-                  <img
-                    src={msg?.avatar}
-                    alt="/"
-                    className="w-10 h-10 rounded-full mr-2"
-                  />
-                )}
+  
 
                 <div className="flex flex-col w-full">
                   <div
@@ -175,7 +101,7 @@ function App() {
                         : "text-left ml-2"
                     }`}
                   >
-                    {formatTime(msg?.timestamp)}
+                    {formatTime(msg?.created_at)}
                   </div>
                 </div>
 
@@ -191,7 +117,7 @@ function App() {
           </div>
           {/* message input */}
           <form
-            onSubmit={sendMessage}
+            onSubmit={handleSend}
             className="flex flex-col sm:flex-row p-4 border-t-[1px] border-gray-700"
           >
             <input
