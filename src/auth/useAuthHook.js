@@ -30,7 +30,7 @@ export const useAuth = () => {
 
   // 3. Return helpers
   const signIn = async () => {
-    await supabase.auth.signInWithOAuth({ provider: "google" });
+    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
   };
 
   const signOut = async () => {
