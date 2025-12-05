@@ -30,7 +30,9 @@ export const useAuth = () => {
 
   // 3. Return helpers
   const signIn = async () => {
-    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: "https://demo-chat-react.netlify.app/" } });
+    // Production redirect
+    //await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: "https://demo-chat-react.netlify.app/" } });
+    await supabase.auth.signInWithOAuth({ provider: "google" });
   };
 
   const signOut = async () => {
