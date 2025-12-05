@@ -10,8 +10,8 @@ export const ChatWrapper = styled.div`
 `;
 
 export const ChatContainer = styled.div`
-  border: 1px solid #374151; // gray-700
-  max-width: 72rem; // max-w-6xl
+  border: 1px solid #374151;
+  max-width: 72rem;
   width: 100%;
   min-height: 600px;
   border-radius: 0.5rem;
@@ -23,17 +23,17 @@ export const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 5rem; // h-20
+  height: 5rem;
   border-bottom: 1px solid #374151;
   padding: 1rem;
 `;
 
 export const HeaderInfo = styled.div`
   p {
-    color: #d1d5db; // gray-300
+    color: #d1d5db;
     &:nth-child(2) {
       font-style: italic;
-      font-size: 0.875rem; // text-sm
+      font-size: 0.875rem;
     }
   }
 `;
@@ -58,17 +58,54 @@ export const MessageRow = styled.div`
 export const MessageContent = styled.div`
   padding: 0.25rem;
   max-width: 70%;
-  border-radius: 0.75rem;
-  background-color: ${({ isOwn }) => (isOwn ? "#374151" : "#6b7280")}; // gray-700 / gray-500
+  border-radius: 0.5rem;
+  position: relative;
   color: white;
-  margin-left: ${({ isOwn }) => (isOwn ? "auto" : "0")};
-  margin-right: ${({ isOwn }) => (!isOwn ? "auto" : "0")};
+  background-color: ${(props) => (props.isOwn ? "#4b5563" : "#6b7280")};
+  margin-left: ${(props) => (props.isOwn ? "auto" : "0")};
+  margin-right: ${(props) => (props.isOwn ? "0" : "auto")};
 `;
 
-export const ReactionMessage = styled.div`
+export const MessageText = styled.p`
+  margin: 0;
+  color: white;
+`;
+
+export const LowerMessageContent = styled.div`
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-left: ${(props) => (props.isOwn ? "auto" : "0")};
+  margin-right: ${(props) => (props.isOwn ? "0" : "auto")};
+  align-items: center;
+  position: relative;
+  margin-top: 0.25rem;
+`;
+
+export const ReactionButton = styled.button`
+  padding: 0.25rem 0.5rem;
+  background-color: #1f2937;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  color: white;
+  cursor: pointer;
+`;
+
+export const ReactionBar = styled.div`
+  display: flex;
+  gap: 4px;
+  position: absolute;
+  ${({ isOwn }) => (!isOwn ? "right: 0;" : "left: 0;")}
+
+  background: transparent;
+`;
+
+export const ReactionBubble = styled.div`
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  border-radius: 9999px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  display: flex;
+  align-items: center;
 `;
 
 export const Timestamp = styled.div`
@@ -81,7 +118,7 @@ export const Timestamp = styled.div`
 `;
 
 export const Avatar = styled.img`
-  width: 2.5rem; // 10
+  width: 2.5rem;
   height: 2.5rem;
   border-radius: 9999px;
   margin-left: 0.5rem;
@@ -100,7 +137,7 @@ export const TextInput = styled.input`
   padding: 0.5rem;
   width: 100%;
   border-radius: 0.5rem;
-  background-color: rgba(0, 0, 0, 0.25); // #00000040
+  background-color: rgba(0, 0, 0, 0.25);
 `;
 
 export const EmojiButton = styled.button`
@@ -112,12 +149,11 @@ export const EmojiPickerWrapper = styled.div`
 `;
 
 export const HeaderText = styled.p`
-  color: #d1d5db; // gray-300
+  color: #d1d5db;
   margin: 0;
   &:nth-child(2) {
     font-style: italic;
-    font-size: 0.875rem; // text-sm
-  }
+    font-size: 0.875rem; 
 `;
 
 export const SignOutButton = styled.button`
@@ -126,15 +162,6 @@ export const SignOutButton = styled.button`
   background: none;
   border: none;
   color: #d1d5db;
-  cursor: pointer;
-`;
-
-export const ReactionButton = styled.button`
-  padding: 0.25rem 0.5rem;
-  background-color: #1f2937; // gray-800
-  border-radius: 9999px;
-  font-size: 0.875rem; // text-sm
-  color: white;
   cursor: pointer;
 `;
 
@@ -153,4 +180,3 @@ export const SendButton = styled.button`
   border: none;
   cursor: pointer;
 `;
-

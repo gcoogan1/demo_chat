@@ -1,52 +1,92 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../supbaseClient";
 
-// Chat data fetching and caching with React Query
-// This query fetches or creates the chat for a league and loads its messages
-export const useChatQuery = (leagueId) => {
-
+// Fetch chat, ensure membership, load messages + reactions + users
+export const useChatQuery = (leagueId, userId, email) => {
   return useQuery({
-    // Unique query key
-    queryKey: ["chat", leagueId],
-    // Fetch function
+    queryKey: ["chat", leagueId, userId],
+
     queryFn: async () => {
+      if (!userId) return null;
+
+      //
       // 1. Fetch or create chat
+      //
       let { data: chat, error } = await supabase
         .from("chats")
         .select("*")
         .eq("league_id", leagueId)
         .maybeSingle();
 
-      // 1.1 If error other than no rows, throw
       if (error && error.code !== "PGRST116") throw error;
 
-      // 1.2 If no chat, create one
       if (!chat) {
         const { data: newChat, error: createErr } = await supabase
           .from("chats")
           .insert({ league_id: leagueId })
           .select()
           .single();
+
         if (createErr) throw createErr;
         chat = newChat;
       }
 
-      // 2. Load messages for this chat using chat.id
+      //
+      // 2. Ensure user is a member of this chat
+      //
+      const { data: membership } = await supabase
+        .from("chat_users")
+        .select("*")
+        .eq("chat_id", chat.id)
+        .eq("chat_user", userId)
+        .maybeSingle();
+
+      if (!membership) {
+        const { error: addErr } = await supabase
+          .from("chat_users")
+          .insert({
+            chat_id: chat.id,
+            chat_user: userId,
+            email: email ?? "Anonymous",
+          });
+
+        if (addErr) throw addErr;
+      }
+
+      //
+      // 3. Fetch messages WITH reactions JOINED
+      //
       const { data: messages, error: msgErr } = await supabase
         .from("messages")
-        .select("*")
+        .select(`
+          *,
+          reactions:reactions (
+            emoji,
+            user_id,
+            message_id,
+            id
+          )
+        `)
         .eq("chat_id", chat.id)
         .order("created_at", { ascending: true });
 
-      // 2.1 If error, throw
       if (msgErr) throw msgErr;
 
-      // 3. Return chat ID and messages
-      return { chatId: chat.id, messages };
+      //
+      // 4. Load chat users (for @mentions autocomplete)
+      //
+      const { data: chatUserList } = await supabase
+        .from("chat_users")
+        .select("email, chat_user")
+        .eq("chat_id", chat.id);
+
+      return {
+        chatId: chat.id,
+        messages,       // already contains reactions[]
+        chatUsers: chatUserList,
+      };
     },
 
-    // Cache data for 5 minutes
     staleTime: 1000 * 60 * 5,
   });
-}
-
+};
